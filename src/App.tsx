@@ -1,35 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {BlurFilter, TextStyle} from 'pixi.js';
+import { Stage, Container, Sprite, Text } from '@pixi/react';
+import { useMemo } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
+export const MyComponent = () =>
+{
+    const blurFilter = useMemo(() => new BlurFilter(0.5), []);
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    return (
+        <Stage>
+            <Sprite
+                image="https://pixijs.io/pixi-react/img/bunny.png"
+                x={400}
+                y={270}
+                anchor={{ x: 0.5, y: 0.5 }}
+            />
 
-export default App
+            <Container x={400} y={330}>
+                <Text
+                    text="Hello World"
+                    anchor={{ x: 0.5, y: 0.5 }}
+                    filters={[blurFilter]}
+                    style={
+                        new TextStyle({
+                            align: 'center',
+                            fontFamily: '"Source Sans Pro", Helvetica, sans-serif',
+                            fontSize: 24,
+                            fill: '#ffffff',
+                        })
+                    }
+                />
+            </Container>
+        </Stage>
+    );
+};
+
+export default MyComponent
