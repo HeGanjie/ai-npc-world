@@ -8,8 +8,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 canvas {
-    box-shadow: 3px 3px 0 #ccc;
+    /*box-shadow: 3px 3px 0 #ccc;*/
 }
