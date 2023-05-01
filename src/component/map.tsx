@@ -15,6 +15,7 @@ const calculateScale = () => {
   const x = (window.innerWidth - imageWidth * scale) / 2;
   const y = (window.innerHeight - imageHeight * scale) / 2;
 
+  console.log('scale', scale, x, y)
   return {x, y, scale};
 };
 

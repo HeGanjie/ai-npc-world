@@ -3,7 +3,7 @@ import { Stage } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 import { useMap } from "./component/map.tsx"; // https://pixelhole.itch.io/pixelholes-overworld-tileset
 
-const BackgroundMap = () => {
+const GameApp = () => {
     const [app, setApp] = useState<PIXI.Application | null>(null);
 
     const rendererOptions = {
@@ -28,4 +28,4 @@ const BackgroundMap = () => {
     );
 };
 
-export default BackgroundMap
+export default GameApp
