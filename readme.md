@@ -22,7 +22,7 @@
 1. 在网上找一张 tilemap，已经包含了屋子的，以它作为地图构建世界。
 2. 将地图上的建筑，以及 npc 的物品栏、性格等，记录到 json 对象中，作为世界的初始状态。
 3. 实现后端接口，主要是对 langChain 进行接口化封装，参考 [Generative Agents in LangChain](https://python.langchain.com/en/latest/use_cases/agent_simulations/characters.html)
-4. 实现前端界面，主要作用是世界运行与可视化，使用 pixi.js，npc 周围会有一个观察范围，范围内的事件会触发 npc 的反应。
+4. 实现前端界面，主要作用是世界运行与可视化，使用 react 开发，npc 周围会有一个观察范围，范围内的事件会触发 npc 的反应。
 
 ### 世界的运行
 
