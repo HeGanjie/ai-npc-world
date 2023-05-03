@@ -21,19 +21,17 @@
 
 1. 在网上找一张 tilemap，已经包含了屋子的，以它作为地图构建世界。
 2. 将地图上的建筑，以及 npc 的物品栏、性格等，记录到 json 对象中，作为世界的初始状态。
-3. 实现后端接口，参考 [Generative Agents in LangChain](https://python.langchain.com/en/latest/use_cases/agent_simulations/characters.html)
-4. 实现前端界面，使用 pixi.js，npc 周围会有一个观察范围，范围内的事件会触发 npc 的反应。
+3. 实现后端接口，主要是对 langChain 进行接口化封装，参考 [Generative Agents in LangChain](https://python.langchain.com/en/latest/use_cases/agent_simulations/characters.html)
+4. 实现前端界面，主要作用是世界运行与可视化，使用 pixi.js，npc 周围会有一个观察范围，范围内的事件会触发 npc 的反应。
 
 ### 世界的运行
 
-1. 前端从后端获取初始状态，渲染出 npc
-2. 世界在前端模拟运行，如果 npc 相互靠近，则会触发相遇事件，npc 可以决定是否交流。
-3. npc 的状态/环境变化后，调用后端接口，生成 npc 下一步行动的决策，并且更新状态。
-4. 前端定时刷新 npc 的状态。
+1. 前端根据初始状态，渲染出 npc
+2. 世界在前端模拟运行，如果 npc 靠近物体或其他 npc，则会触发事件，npc 可以决定后续动作。
+3. 玩家可以通过点击 npc，采访 npc，npc 会根据玩家的提问，回答问题
 
 ### 后端需要实现的接口
 
-1. 查询世界状态
+1. 初始化 NPC 信息
 2. 根据 npc 最新观察，生成 npc 下一步反应
 3. 提供采访 AI 的接口
-4. 提供改变世界状态的接口
