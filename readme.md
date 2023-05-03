@@ -35,3 +35,24 @@
 1. 初始化 NPC 信息
 2. 根据 npc 最新观察，生成 npc 下一步反应
 3. 提供采访 AI 的接口
+
+### 如何运行
+
+1. 安装依赖
+
+```bash
+npm install
+cd server && pip install -r requirements.txt
+```
+
+2. 运行前端
+
+```bash
+npm run dev
+```
+
+3. 运行后端
+
+```bash
+cd server && OPENAI_API_KEY=xxx python server.py
+```

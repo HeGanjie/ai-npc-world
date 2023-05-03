@@ -17,10 +17,10 @@ def init_agents():
         return jsonify({"error": "No JSON payload received"}), 400
 
     # init agents
-    # data: {npcName: {age: 0, traits: [], status: "N/A"}, ...}
+    # data: {npcName: {age: 0, traits: [], status: "N/A", init_obs: [...]}, ...}
     agent_service = AgentService.get_instance()
     for npc_name, npc_info in data.items():
-        agent_service.init_agent(npc_name, npc_info["age"], npc_info["traits"], npc_info["status"])
+        agent_service.init_agent(npc_name, npc_info["age"], npc_info["traits"], npc_info["status"], npc_info["init_obs"])
 
     # log
     logging.info("init agents: %s", data)

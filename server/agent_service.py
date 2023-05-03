@@ -16,9 +16,9 @@ class AgentService:
             raise RuntimeError("Use 'Singleton.get_instance()' to create a new instance.")
         # 其他初始化代码
 
-    def init_agent(self, npc_name, npc_age, npc_traits, npc_status):
-        self._agent_dict[npc_name] = create_agent(
-            npc_name, npc_age, npc_traits, npc_status, reflection_threshold=8, verbose=True)
+    def init_agent(self, name, age, traits, status, init_obs):
+        self._agent_dict[name] = create_agent(
+            name, age, traits, status, init_obs, reflection_threshold=8, verbose=True)
 
     def agent_gen_reaction(self, agent_name, observation):
         agent = self._agent_dict[agent_name]

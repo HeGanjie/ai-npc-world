@@ -42,7 +42,7 @@ def create_new_memory_retriever():
     return TimeWeightedVectorStoreRetriever(vectorstore=vectorstore, other_score_keys=["importance"], k=15)
 
 
-def create_agent(name, age, traits, status='N/A', reflection_threshold=8, verbose=False):
+def create_agent(name, age, traits, status='N/A', init_obs=[], reflection_threshold=8, verbose=False):
     """Create a new agent."""
     agent_memory = GenerativeAgentMemory(
         llm=LLM,
@@ -61,6 +61,8 @@ def create_agent(name, age, traits, status='N/A', reflection_threshold=8, verbos
                             llm=LLM,
                             memory=agent_memory
                             )
+
+    agent_add_memory(agent, init_obs)
     return agent
 
 

@@ -218,7 +218,7 @@ export const GEN_NPC_INIT_INFO = () => ({
 })
 
 export const GEN_RUNTIME_STATE = () => ({
-  "time": '2023-05-03 06:00:00',
+  "time": '2023-05-03 06:00',
   npcs: {
     "李风华": {
       "clothing": ["休闲T恤", "工装裤", "牛仔外套", "安全帽", "工作手套", "皮鞋"],
