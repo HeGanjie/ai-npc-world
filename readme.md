@@ -1,4 +1,4 @@
-# AI NPC world demo
+# AI NPC world demo (WIP)
 
 ### 项目介绍
 
