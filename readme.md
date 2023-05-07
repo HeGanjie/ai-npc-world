@@ -50,8 +50,7 @@ cd server && OPENAI_API_KEY=xxx python server.py
 项目使用了 LangChain 最近出的 [Generative Agents](https://python.langchain.com/en/latest/use_cases/agent_simulations/characters.html#dialogue-between-generative-agents) 来尝试实现，但总体做得比较粗糙，是试水性质的项目。并且接口调用所需要时间比较长，所以运行效果不是很好，但是可以看到 npc 会根据预设的人设，进行一些合理的行为。
 
 目前遇到的问题：
-1. 无法让 npc 说中文，即使加上 npc 的日常用语是中文的记忆，也还是返回了英文。
-2. 采访 NPC 时 npc 会比较啰嗦，会说很多无关的话，导致不知道怎么进行下一步的行为。
+1. npc 会回复得比较模糊，甚至可能是英语，不一定根据格式回答，导致不知道怎么进行下一步的行为。
 
 接口调用效果：
 ```bash
@@ -59,15 +58,14 @@ cd server && OPENAI_API_KEY=xxx python server.py
 curl 'http://localhost:5173/lang-chain/init_agents' \
   -H 'Content-Type: application/json' \
   --data-raw '{"李风华":{"name":"李风华","age":28,"location":"主岛的港口北边小屋",\
-  "traits":"勤奋, 健谈, 固执, 缺乏耐心","status":"李风华是男性，现在居住在主岛的港口北边小屋，\
+  "traits":"勤奋, 健谈, 固执, 缺乏耐心","status":"李风华是男性，日常用语是汉语，现在居住在主岛的港口北边小屋，\
   职业是伐木工，在主岛的木材仓库工作。张梦溪是李风华的伴侣，李晓晨是李风华的孩子，林静石、高飞翔是李风华的朋友。\
   李风华的能力，可以打分为 采集: 7, 农耕: 7, 制作: 4, 医疗: 2, 学识: 4, 体魄: 7, 社交: 5, 运气: 6。",\
-  "init_obs":["李风华的日常用语是汉语","李风华身上正在穿着这些：休闲T恤, 工装裤, 牛仔外套, 安全帽, 工作手套, 皮鞋",\
-  "李风华身上带着这些：手机, 钥匙, 水壶, 小刀, 木头雕刻","李风华的存款有3500个信用点","李风华听到了闹钟响，醒来了",\
-  "李风华起床后吃了一碗粥","李风华工作用的斧头有点老旧了","李风华准备把木头雕刻送给张梦溪",\
-  "李风华上班前和她的老伴张梦溪讲了个笑话","李风华无意中听到她的同事黄思琪说石天泽很难相处",\
-  "李风华现在（2023-05-03 06:00）位于主岛的港口北边小屋"]}}'
-
+  "init_obs":["李风华身上正在穿着这些：休闲T恤, 工装裤, 牛仔外套, 安全帽, 工作手套, 皮鞋","李风华身上带着这些：手机, \
+  钥匙, 水壶, 小刀, 木头雕刻","李风华的存款有3500个信用点","李风华听到了闹钟响，醒来了","李风华起床后吃了一碗粥",\
+  "李风华工作用的斧头有点老旧了","李风华准备把木头雕刻送给张梦溪","李风华上班前和她的老伴张梦溪讲了个笑话",\
+  "李风华无意中听到她的同事黄思琪说石天泽很难相处","李风华现在（2023-05-03 06:00）位于主岛的港口北边小屋"]}}'
+  
 # response:
 { "message": "JSON payload received and processed" }
 
@@ -76,22 +74,21 @@ curl 'http://localhost:5173/lang-chain/init_agents' \
 curl 'http://localhost:5173/lang-chain/agent_gen_reaction' \
   -H 'Content-Type: application/json' \
   --data-raw '{"name":"李风华","obs":"现在时间是：2023-05-03 06:00，你感到吃得很饱并且精神饱满，当前任务：暂无任务。\
-   \n你现在位于：主岛的港口北边小屋\n你看到主岛的港口北边小屋"}'
+  \n你现在位于：主岛的港口北边小屋\n你看到主岛的港口北边小屋"}'
 
 # response:
-{ "reaction": "李风华 continues with his daily routine and does not react to the observation." }
-
+{
+    "reaction": "李风华 looks around the small house and takes a deep breath, feeling grateful for the peaceful morning."
+}
 
 # 采访 AI 接口
 curl 'http://localhost:5173/lang-chain/interview_agent' \
   -H 'Content-Type: application/json' \
-  --data-raw '{"name":"李风华","msg":"假如现在给你几个选择，A. 回家睡觉  B. 去吃xxx  C. 去到xxx  D. 去找xxx \
-   E. 去玩耍放松  F. 去购买xx  G. 去做xxx \n你会选择（填好xxx）："}'
+  --data-raw '{"name":"李风华","msg":"请用中文简短地回答，假如现在给你几个选择，A. 回家睡觉  B. 去吃xxx  \
+  C. 去到xxx  D. 去找xxx  E. 去玩耍放松  F. 去购买xx  G. 去做xxx \n你会选择（请填xxx）："}'
 
 # response:
 {
-    "response": "李风华 said \"Hmm, I think I would choose option D and go find my friend Lin Jingshi.\
-     We haven't caught up in a while and it would be nice to see how he's been doing. \
-     Plus, I could bring along the wooden carving I made as a gift for him. Thanks for asking!\""
+    "response": "李风华 said \"我会选择去找石天泽了解情况。\""
 }
 ```

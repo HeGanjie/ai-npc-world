@@ -26,7 +26,7 @@ const mapLocDict = _.keyBy(mapInitInfo.locations, (loc) => loc.id)
 function describeBaseInfo(npc: {name: string; gender: string; age: number; job: string; workAt: string; liveIn: string; traits: string[]}) {
     const {name, gender, job, workAt, liveIn, traits} = npc
     return [
-        `${name}是${gender}性，现在居住在${liveIn}，职业是${job}，在${workAt}工作`,
+        `${name}是${gender}性，日常用语是汉语，现在居住在${liveIn}，职业是${job}，在${workAt}工作`,
         traits.join(", ")
     ]
 }
@@ -59,7 +59,6 @@ export function getInitWorldRuntimeState() {
                 traits,
                 status: `${basicInfo}。${describeRelation(name, relation).join('，')}。${describeSkill(name, skill)}。`,
                 init_obs: [
-                    `${name}的日常用语是汉语`,
                     ...descInventory(name, npc),
                     ...(npcInitInfo.init_obs[name] || []),
                     `${name}现在（${s.time}）位于${pos}`,
@@ -200,8 +199,8 @@ export async function genReaction(npc: AgentInfo, plan: string | null, recentlyO
         body: JSON.stringify({
             name: npcName,
             msg: [
-                `假如现在给你几个选择，${generateOptions(options)}`,
-                '你会选择（填好xxx）：'
+                `请用中文简短地回答，假如现在给你几个选择，${generateOptions(options)}`,
+                '你会选择：'
             ].join('\n')
         })
     }).then(res => res.json())
