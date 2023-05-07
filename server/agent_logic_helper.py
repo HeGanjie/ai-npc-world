@@ -15,7 +15,7 @@ from langchain.experimental.generative_agents import GenerativeAgent, Generative
 import math
 import faiss
 
-USER_NAME = "Person A"  # The name you want to use when interviewing the agent.
+USER_NAME = "旁白君"  # The name you want to use when interviewing the agent.
 LLM = ChatOpenAI(max_tokens=1500)  # Can be any LLM you want.
 
 
