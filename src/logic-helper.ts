@@ -1,6 +1,7 @@
 import {GEN_MAP_INIT_INFO, GEN_NPC_INIT_INFO, GEN_RUNTIME_STATE} from "./consts";
 import * as _ from "lodash";
 import * as dayjs from "dayjs";
+import {AgentInfo, NpcInitInfo, NpcState, WorldRuntimeState} from "./types";
 
 function describeRelation(name: string, relation: {mate: string; children: string[]; friends: string[]}) {
     const {mate, children, friends} = relation
@@ -31,12 +32,12 @@ function describeBaseInfo(npc: {name: string; gender: string; age: number; job: 
     ]
 }
 
-function descInventory(name: string, inv: {clothing: string[]; inventory: string[], credits: number}) {
+function descInventory(name: string, inv: {clothing: string[]; inventory: string[], credits: number; mood: number}) {
     const {clothing, inventory, credits} = inv
     return [
-        `${name}身上正在穿着这些：${clothing.join(", ")}`,
-        `${name}身上带着这些：${inventory.join(", ")}`,
-        `${name}的存款有${credits}个信用点`
+        `${name}身上正在穿着这些：${clothing.join(", ")}。`,
+        `${name}身上带着这些：${inventory.join(", ")}。`,
+        `${name}的存款有${credits}个信用点。`
     ]
 }
 
@@ -60,8 +61,7 @@ export function getInitWorldRuntimeState() {
                 status: `${basicInfo}。${describeRelation(name, relation).join('，')}。${describeSkill(name, skill)}。`,
                 init_obs: [
                     ...descInventory(name, npc),
-                    ...(npcInitInfo.init_obs[name] || []),
-                    `${name}现在（${s.time}）位于${pos}`,
+                    ..._.map((npcInitInfo.init_obs[name] || []), s => `${s}。`)
                 ]
             }
         }),
@@ -82,27 +82,14 @@ export function posDescribeToCoord(posDesc: string) {
         const y: number = fromCoord.y + (toCoord.y - fromCoord.y) * parseInt(percent) / 100
         return {x, y}
     }
-
-    const loc = mapLocDict[posDesc]
-    if (!loc) {
-        console.warn(`posDesc ${posDesc} not found`)
+    // posDesc 可能是坐标
+    const m2 = /(\d+),(\d+)/.exec(posDesc)
+    if (m2) {
+        const [, x, y] = m2
+        return {x: parseInt(x), y: parseInt(y)}
     }
-    return loc ? loc.pos : null;
-}
-
-export interface AgentInfo {
-    name: string;
-    age: number;
-    location: string;
-    traits: string;
-    status: string;
-    init_obs: string[];
-}
-
-export interface WorldRuntimeState {
-    time: string;
-    npcs: Record<string, AgentInfo>;
-    buildings: Record<string, Record<string, string[]>>
+    const loc = mapLocDict[posDesc]
+    return loc ? loc.pos : null
 }
 
 export const initWorld = _.debounce(async (
@@ -137,29 +124,57 @@ export const initWorld = _.debounce(async (
 
 
 
-export interface NpcState {
-    hunger: number
-    sleep: number
-    plan: string | null
-}
-
 function hungerDescription(hungerLevel: number) {
     const descriptions = ["要饿死了", "饥肠辘辘", "微饿", "不饿不饱", "略感饱足", "吃得很饱"];
-    return descriptions[_.clamp((10 - hungerLevel) / 2, 0, 5)] || '不饿不饱'
+    const s = _.round(_.clamp((10 - hungerLevel) / 2, 0, 5))
+    return descriptions[s] || '不饿不饱'
 }
 
 function describeEnergyLevel(sleepLevel: number) {
     const energyLevels = ["困死了", "昏昏欲睡", "稍有疲惫", "精神尚可", "精神振奋", "精神饱满"];
-    return energyLevels[_.clamp((10 - sleepLevel) / 2, 0, 5)] || '精神尚可'
+    const s = _.round(_.clamp((10 - sleepLevel) / 2, 0, 5));
+    return energyLevels[s] || '精神尚可'
 }
 
-export function genNpcRealtimeObs(time: string, npcState: NpcState, location: string, obsByLoc: string[]): string {
-    const {hunger, sleep, plan} = npcState
+function describeMood(score: number) {
+    const moods = ["情绪崩溃", "心如死灰", "忧郁困扰", "情绪平淡", "较为欢快", "心情愉快"];
+    const s = _.round(_.clamp(score / 2, 0, 5))
+    return moods[s] || "情绪平淡";
+}
 
+function describeCurrPosByNearby(currPos: {x: number; y: number}) {
+    // 输出最近的地点到当前位置的方位和距离
+    const locSortedByDist = _.orderBy(mapLocDict, loc => {
+        return Math.abs(loc.pos.x - currPos.x) + Math.abs(loc.pos.y - currPos.y)
+    })
+    const nearestLoc = locSortedByDist[0]
+    const dx = nearestLoc.pos.x - currPos.x
+    const dy = nearestLoc.pos.y - currPos.y
+    const dist = Math.abs(dx) + Math.abs(dy)
+    if (dist < 30) {
+        return nearestLoc.name
+    }
+    // 东西南北, 东北，东南，西北，西南, 8个方向, 45度分隔
+    const cardinalDirection8Dir = [
+        '东', '东北', '北', '西北', '西', '西南', '南', '东南'
+    ]
+    const dirIdx = Math.round((Math.atan2(dy, dx) + Math.PI) / (Math.PI / 4)) % 8
+    const cardinalDirection = cardinalDirection8Dir[dirIdx]
+    return `${nearestLoc.name}的${cardinalDirection}方向${dist}米处`
+}
+
+export function genNpcRealtimeObs(time: string, npcName: string, npcState: NpcState, obsByLoc: string[]): string {
+    const {hunger, sleep, mood, plan} = npcState
+
+    const obsWithoutLoc = _.without(obsByLoc, npcState.targetLoc)
+    const currLoc = npcState.targetLoc ? `去往${npcState.targetLoc}途中` : describeCurrPosByNearby(npcState.currPos);
     return _.compact([
-        `现在时间是：${time}，你感到${hungerDescription(hunger)}并且${describeEnergyLevel(sleep)}，当前任务：${plan || '暂无任务'}。`,
-        `你现在位于：${location}`,
-        _.isEmpty(obsByLoc) ? null : `你看到${obsByLoc.join('、')}`,
+        `过了一段时间，现在时间是：${time}，${npcName}现在位于：${currLoc}。`,
+        `${npcName}感到${hungerDescription(hunger)}、${describeEnergyLevel(sleep)}并且${describeMood(mood)}。`,
+        _.isEmpty(obsWithoutLoc) ? null : `${npcName}能看到${obsWithoutLoc.join('、')}。`,
+        !plan
+          ? `现在，${_.trim(plan || `${npcName}刚关掉了闹钟，清醒后，你感觉应该做些什么`)}。`
+          : `刚才，${npcName}完成了上一个任务（${plan}），现在该做什么呢？`
     ]).join('\n')
 }
 
@@ -181,36 +196,121 @@ function generateOptions(options: string[]) {
     return result;
 }
 
-export async function genReaction(npc: AgentInfo, plan: string | null, recentlyObs: string) {
+function ask(npcName: string, reaction: string, question: string, options: string) {
+    return fetch('/lang-chain/understand_npc_action', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({npc: npcName, reaction, question, options})
+    })
+        .then(res => res.json())
+        .then(res => res.answer);
+}
+
+function queryMap(npc: string, locType: 'home' | 'work') {
+    const readKey = ({home: 'liveIn', work: 'workAt'} as any)[locType]
+    return _(npcInitInfo.npcs)
+        .chain()
+        .find(n => n.name === npc)
+        .get(readKey)
+        .value()
+}
+
+function queryNpcs(predicate: (npc: NpcInitInfo) => boolean) {
+    return _.filter(npcInitInfo.npcs, predicate)
+}
+
+async function understandMovement(npcName: string, reaction: string) {
+    const moveIntent = await ask(npcName, reaction, `${npcName}打算去哪里？`, '自己家里/自己工作的地方/别人家里/别人工作的地方/没有提及')
+    if (/[否不无没]/.test(moveIntent)) {
+        return null
+    }
+    if (/自己家里/.test(moveIntent)) {
+        return queryMap(npcName, 'home')
+    }
+    if (/自己工作的地方/.test(moveIntent)) {
+        return queryMap(npcName, 'work')
+    }
+    const otherNpcNames = queryNpcs(n => n.name !== npcName)
+      .map(n => n.name)
+    const forWho = await ask(npcName, reaction, `${npcName}打算去找谁？`, otherNpcNames.join('/'))
+    if (/别人家里/.test(moveIntent)) {
+        return queryMap(forWho, 'home')
+    } else if (/别人工作的地方/.test(moveIntent)) {
+        return queryMap(forWho, 'work')
+    }
+    return null
+}
+
+async function understandEatingAmount(npcName: string, reaction: string) {
+    const eatIntent = await ask(npcName, reaction, `${npcName}打算吃多少食物？`, '不进食/零食/小吃一顿/大吃一顿/早餐/午餐/晚餐/没有提及')
+    if (/[否不无没]/.test(eatIntent)) {
+        return 0
+    }
+    if (/零食/.test(eatIntent)) {
+        return 5
+    }
+    if (/小吃一顿|早餐/.test(eatIntent)) {
+        return 8
+    }
+    if (/大吃一顿|午餐|晚餐/.test(eatIntent)) {
+        return 12
+    }
+    return 0
+}
+
+async function understandRest(npcName: string, reaction: string) {
+    const restType = await ask(npcName, reaction, `${npcName}打算休息多久？`, '不休息/瞌睡片刻/小憩/打盹/睡一觉/没有提及');
+    if (/[否不无没]/.test(restType)) {
+        return 0;
+    }
+
+    let recovery = 0;
+    if (/瞌睡片刻/.test(restType)) {
+        recovery = 1;
+    } else if (/小憩/.test(restType)) {
+        recovery = 3;
+    } else if (/打盹/.test(restType)) {
+        recovery = 5;
+    } else if (/睡一觉/.test(restType)) {
+        recovery = 8;
+    }
+
+    return recovery;
+}
+
+async function understandTaskTime(npcName: string, reaction: string) {
+    const taskTime = await ask(npcName, reaction, `你估计${npcName}大概需要多少时间来完成这个任务？`, '请输入小时数（0.0~24.0）')
+    if (!taskTime || isNaN(taskTime)) {
+        return 0
+    }
+
+    return Number(taskTime)
+}
+
+
+
+export async function genReaction(npc: AgentInfo, recentlyObs: string) {
     const npcName = npc.name
-    const reaction = await fetch('/lang-chain/agent_gen_reaction', {
+    const res = await fetch('/lang-chain/agent_gen_reaction', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({name: npcName, obs: recentlyObs})
     }).then(res => res.json())
+    const reaction = res.reaction
     console.log('genReaction reaction:', npcName, recentlyObs, reaction)
 
-    const options: string[] = _.compact([
-        plan ? `继续${plan}` : null, '回家睡觉', '去吃xxx', '去到xxx', '去找xxx', '去玩耍放松', '去购买xx', '去做xxx'
+    const [movementAction, eatingAmount, restAmount] = await Promise.all([
+        understandMovement(npcName, reaction),
+        understandEatingAmount(npcName, reaction),
+        understandRest(npcName, reaction)
     ])
-    const nextAction = await fetch('/lang-chain/interview_agent', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            name: npcName,
-            msg: [
-                `请用中文简短地回答，假如现在给你几个选择，${generateOptions(options)}`,
-                '你会选择：'
-            ].join('\n')
-        })
-    }).then(res => res.json())
-    console.log('genReaction nextAction:', npcName, nextAction)
 
     return {
         recentlyObs,
         reaction,
-        options,
-        nextAction
+        movementAction,
+        eatingAmount,
+        restAmount,
     }
 }
 

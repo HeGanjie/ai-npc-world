@@ -17,6 +17,9 @@ class AgentService:
         # 其他初始化代码
 
     def init_agent(self, name, age, traits, status, init_obs):
+        # check if agent already exists
+        if name in self._agent_dict:
+            return
         self._agent_dict[name] = create_agent(
             name, age, traits, status, init_obs, reflection_threshold=8, verbose=True)
 
@@ -26,8 +29,8 @@ class AgentService:
             raise Exception("Agent not found")
         return agent_generate_reaction(agent, observation)
 
-    def interview_agent(self, agent_name, message):
+    def interview_agent(self, agent_name, interview_by, message):
         agent = self._agent_dict[agent_name]
         if agent is None:
             raise Exception("Agent not found")
-        return interview_agent(agent, message)
+        return interview_agent(agent, interview_by, message)

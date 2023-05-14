@@ -22,7 +22,8 @@
 
 1. 初始化 NPC 信息
 2. 根据 npc 最新观察，生成 npc 下一步反应
-3. 提供采访 AI 的接口
+3. NLU 接口，主要用于根据反应描述，得出下一步的动作
+4. 提供采访 AI 的接口
 
 ### 如何运行
 
@@ -49,23 +50,23 @@ cd server && OPENAI_API_KEY=xxx python server.py
 
 项目使用了 LangChain 最近出的 [Generative Agents](https://python.langchain.com/en/latest/use_cases/agent_simulations/characters.html#dialogue-between-generative-agents) 来尝试实现，但总体做得比较粗糙，是试水性质的项目。并且接口调用所需要时间比较长，所以运行效果不是很好，但是可以看到 npc 会根据预设的人设，进行一些合理的行为。
 
-目前遇到的问题：
-1. npc 会回复得比较模糊，甚至可能是英语，不一定根据格式回答，导致不知道怎么进行下一步的行为。
+目前的效果：
+1. 目前只试验了单个 npc。
+2. 时间初始化到早上 6 点，npc 会醒来，吃早饭，然后去上班。
+3. 但是碰到个问题，自然语言理解模块不会总是正常工作，我还在研究怎么解决。可以看下面例子：
 
 接口调用效果：
 ```bash
 # 初始化 NPC 信息接口
 curl 'http://localhost:5173/lang-chain/init_agents' \
   -H 'Content-Type: application/json' \
-  --data-raw '{"李风华":{"name":"李风华","age":28,"location":"主岛的港口北边小屋",\
-  "traits":"勤奋, 健谈, 固执, 缺乏耐心","status":"李风华是男性，日常用语是汉语，现在居住在主岛的港口北边小屋，\
-  职业是伐木工，在主岛的木材仓库工作。张梦溪是李风华的伴侣，李晓晨是李风华的孩子，林静石、高飞翔是李风华的朋友。\
-  李风华的能力，可以打分为 采集: 7, 农耕: 7, 制作: 4, 医疗: 2, 学识: 4, 体魄: 7, 社交: 5, 运气: 6。",\
-  "init_obs":["李风华身上正在穿着这些：休闲T恤, 工装裤, 牛仔外套, 安全帽, 工作手套, 皮鞋","李风华身上带着这些：手机, \
-  钥匙, 水壶, 小刀, 木头雕刻","李风华的存款有3500个信用点","李风华听到了闹钟响，醒来了","李风华起床后吃了一碗粥",\
-  "李风华工作用的斧头有点老旧了","李风华准备把木头雕刻送给张梦溪","李风华上班前和她的老伴张梦溪讲了个笑话",\
-  "李风华无意中听到她的同事黄思琪说石天泽很难相处","李风华现在（2023-05-03 06:00）位于主岛的港口北边小屋"]}}'
-  
+  --data-raw '{"李风华":{"name":"李风华","age":28,"location":"主岛的港口北边小屋","traits":"勤奋, 健谈, 固执, 缺乏耐心",\
+  "status":"李风华是男性，日常用语是汉语，现在居住在主岛的港口北边小屋，职业是伐木工，在主岛的木材仓库工作。张梦溪是李风华的伴侣，\
+  李晓晨是李风华的孩子，林静石、高飞翔是李风华的朋友。李风华的能力，可以打分为 采集: 7, 农耕: 7, 制作: 4, 医疗: 2, 学识: 4, 体魄: 7,\
+   社交: 5, 运气: 6。","init_obs":["李风华身上正在穿着这些：休闲T恤, 工装裤, 牛仔外套, 安全帽, 工作手套, 皮鞋。",\
+   "李风华身上带着这些：手机, 钥匙, 水壶, 小刀, 木头雕刻。","李风华的存款有3500个信用点。","李风华工作用的斧头有点老旧了。",\
+   "李风华准备把木头雕刻送给张梦溪。","李风华上班前和她的老伴张梦溪讲了个笑话。","李风华无意中听到她的同事黄思琪说石天泽很难相处。",\
+   "李风华听到了闹钟响，醒来了。"]}}'  
 # response:
 { "message": "JSON payload received and processed" }
 
@@ -73,22 +74,44 @@ curl 'http://localhost:5173/lang-chain/init_agents' \
 # 生成下一步反应接口
 curl 'http://localhost:5173/lang-chain/agent_gen_reaction' \
   -H 'Content-Type: application/json' \
-  --data-raw '{"name":"李风华","obs":"现在时间是：2023-05-03 06:00，你感到吃得很饱并且精神饱满，当前任务：暂无任务。\
-  \n你现在位于：主岛的港口北边小屋\n你看到主岛的港口北边小屋"}'
-
+  --data-raw '{"name":"李风华","obs":"过了一段时间，现在时间是：2023-05-03 06:00，李风华现在位于：港口北边小屋。\
+  李风华感到饥肠辘辘、精神饱满并且较为欢快。\n李风华能看到主岛的港口北边小屋。\
+  现在，李风华刚关掉了闹钟，清醒后，你感觉应该做些什么。"}'
 # response:
-{
-    "reaction": "李风华 looks around the small house and takes a deep breath, feeling grateful for the peaceful morning."
-}
+{ "reaction": "李风华 stretches and decides to start his day, perhaps by preparing breakfast." }
 
+# 自然语言理解接口，主要用于将 AI 的反应进行分类，得出下一步的动作
+curl 'http://localhost:5173/lang-chain/understand_npc_action' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{"npc":"李风华","reaction":"李风华 stretches and decides to start his day, \
+  perhaps by preparing breakfast.","question":"李风华打算吃多少食物？",\
+   "options":"不进食/零食/小吃一顿/大吃一顿/早餐/午餐/晚餐/没有提及"}'
+# response:
+{ "answer": "早餐" }
+
+#有问题的 case
+curl 'http://localhost:5173/lang-chain/understand_npc_action' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{"npc":"李风华","reaction":"李风华 continues on his way to the wood warehouse.",
+  "question":"李风华打算去哪里？","options":"自己家里/自己工作的地方/别人家里/别人工作的地方/没有提及"}'
+# response:
+{ "answer": "别人工作的地方" }
+  
+  
 # 采访 AI 接口
 curl 'http://localhost:5173/lang-chain/interview_agent' \
   -H 'Content-Type: application/json' \
-  --data-raw '{"name":"李风华","msg":"请用中文简短地回答，假如现在给你几个选择，A. 回家睡觉  B. 去吃xxx  \
-  C. 去到xxx  D. 去找xxx  E. 去玩耍放松  F. 去购买xx  G. 去做xxx \n你会选择（请填xxx）："}'
-
+  --data-raw '{"name":"李风华","msg":"你小孩叫什么名字？请用中文回答。"}'
+  
 # response:
-{
-    "response": "李风华 said \"我会选择去找石天泽了解情况。\""
-}
+{ "response": "李风华 said \"My child's name is Li Xiaochen.\"" }
+
 ```
+
+#### 运行效果截图
+
+![效果1](https://github.com/HeGanjie/ai-npc-world/raw/main/assets/result1.png)
+
+![效果2-npc工作时](https://github.com/HeGanjie/ai-npc-world/raw/main/assets/result2-working.png)
+
+![效果3-采访npc](https://github.com/HeGanjie/ai-npc-world/raw/main/assets/result3-interview.png)

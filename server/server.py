@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import logging
 from agent_service import AgentService
+from nlu_service import NLUService
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -44,6 +45,23 @@ def agent_gen_reaction():
     # 返回响应
     return jsonify({"reaction": reaction}), 200
 
+@app.route("/understand_npc_action", methods=["POST"])
+def understand_npc_action():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON payload received"}), 400
+
+    # data: {npc: "", reaction: "", question: "", options: "a/b/c"}
+    nlu_service = NLUService.get_instance()
+    action = nlu_service.classify_action(data["npc"], data["reaction"], data["question"], data["options"])
+
+    # log
+    logging.info("understand npc action: %s, %s", data)
+
+    # 返回响应
+    return jsonify({"answer": action}), 200
+
+
 @app.route("/interview_agent", methods=["POST"])
 def interview_agent():
     data = request.get_json()
@@ -52,7 +70,8 @@ def interview_agent():
 
     # data: {name: "", msg: ""}
     agent_service = AgentService.get_instance()
-    response = agent_service.interview_agent(data["name"], data["msg"])
+
+    response = agent_service.interview_agent(data["name"], data.get("interview_by", "旁白君"), data["msg"])
 
     # log
     logging.info("interview agent: %s", data)

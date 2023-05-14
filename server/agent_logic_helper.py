@@ -15,7 +15,6 @@ from langchain.experimental.generative_agents import GenerativeAgent, Generative
 import math
 import faiss
 
-USER_NAME = "旁白君"  # The name you want to use when interviewing the agent.
 LLM = ChatOpenAI(max_tokens=1500)  # Can be any LLM you want.
 
 
@@ -75,13 +74,14 @@ def agent_add_memory(agent: GenerativeAgent, observations: List[str]):
         agent.memory.add_memory(observation)
 
 
-def interview_agent(agent: GenerativeAgent, message: str) -> str:
-    """Help the notebook user interact with the agent."""
-    new_message = f"{USER_NAME} says {message}"
+def interview_agent(agent: GenerativeAgent, interview_by: str, message: str) -> str:
+    # 这个方法会增加agent的记忆
+    new_message = f"{interview_by} says {message}"
     return agent.generate_dialogue_response(new_message)[1]
 
 
 def agent_generate_reaction(agent: GenerativeAgent, observation: str) -> str:
+    # 这个方法会增加agent的记忆
     _, reaction = agent.generate_reaction(observation)
     return reaction
 
